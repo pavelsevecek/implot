@@ -2200,7 +2200,7 @@ CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 // [SECTION] PlotPieChart
 //-----------------------------------------------------------------------------
 
-IMPLOT_INLINE void RenderPieSlice(ImDrawList& draw_list, const ImPlotPoint& center, double radius, double a0, double a1, ImU32 col, bool detached = false) {
+IMPLOT_INLINE void RenderPieSlice(ImDrawList& draw_list, const ImPlotPoint& center, double radius, double aspect, double a0, double a1, ImU32 col, bool detached = false) {
     const float resolution = 50 / (2 * IM_PI);
     ImVec2 buffer[52];
     
@@ -2226,7 +2226,7 @@ IMPLOT_INLINE void RenderPieSlice(ImDrawList& draw_list, const ImPlotPoint& cent
             double a = new_a0 + i * new_da;
             buffer[i + 1] = PlotToPixels(
                 offsetCenter.x + (radius + offset/2) * cos(a),
-                offsetCenter.y + (radius + offset/2) * sin(a),
+                offsetCenter.y + (radius * aspect + offset/2) * sin(a),
                 IMPLOT_AUTO, IMPLOT_AUTO
             );
         }
@@ -2237,7 +2237,7 @@ IMPLOT_INLINE void RenderPieSlice(ImDrawList& draw_list, const ImPlotPoint& cent
             double a = a0 + i * da;
             buffer[i + 1] = PlotToPixels(
                 center.x + radius * cos(a), 
-                center.y + radius * sin(a), 
+                center.y + radius * aspect * sin(a), 
                 IMPLOT_AUTO, IMPLOT_AUTO);
         }
     }
@@ -2288,6 +2288,8 @@ void PlotPieChartEx(const char* const label_ids[], const T* values, int count, I
     double a1 = angle0 * 2 * IM_PI / 360.0;
     ImPlotPoint Pmin = ImPlotPoint(center.x - radius, center.y - radius);
     ImPlotPoint Pmax = ImPlotPoint(center.x + radius, center.y + radius);
+    ImRect plotRect = GImPlot->CurrentPlot->PlotRect;
+    double aspect = plotRect.GetWidth() / plotRect.GetHeight(); 
     for (int i = 0; i < count; ++i) {
         ImPlotItem* item = GetItem(label_ids[i]);
         const double percent = normalize ? (double)values[i] / sum : (double)values[i];
@@ -2300,11 +2302,11 @@ void PlotPieChartEx(const char* const label_ids[], const T* values, int count, I
             if (sum > 0.0) {
                 ImU32 col = GetCurrentItem()->Color;
                 if (percent < 0.5) {
-                    RenderPieSlice(draw_list, center, radius, a0, a1, col, hovered);
+                    RenderPieSlice(draw_list, center, radius, aspect, a0, a1, col, hovered);
                 }
                 else {
-                    RenderPieSlice(draw_list, center, radius, a0, a0 + (a1 - a0) * 0.5, col, hovered);
-                    RenderPieSlice(draw_list, center, radius, a0 + (a1 - a0) * 0.5, a1, col, hovered);
+                    RenderPieSlice(draw_list, center, radius, aspect, a0, a0 + (a1 - a0) * 0.5, col, hovered);
+                    RenderPieSlice(draw_list, center, radius, aspect, a0 + (a1 - a0) * 0.5, a1, col, hovered);
                 }
             }
             EndItem();
